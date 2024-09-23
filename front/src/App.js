@@ -6,6 +6,8 @@ function App() {
   const [services, setServices] = useState([]);
   const [serviceName, setServiceName] = useState('');
   const [comment, setComment] = useState('');
+  const [deltaT, setDeltaT] = useState('');
+  const [companyName, setCompanyName] = useState('');
 
   useEffect(() => {
     fetchServices();
@@ -29,13 +31,17 @@ function App() {
     try {
       const response = await axios.post('/api/register', {
         serviceName,
-        comment
+        comment,
+        deltaT: parseInt(deltaT, 10),
+        companyName,
       });
 
       // После успешного добавления, обновляем список сервисов
-      fetchServices(); // Должен обновлять список с сервера
+      fetchServices();
       setServiceName('');
       setComment('');
+      setDeltaT('');
+      setCompanyName('');
     } catch (error) {
       console.error('Error adding service', error);
     }
@@ -45,49 +51,76 @@ function App() {
       <div className="App">
         <header className="App-header">
           <h1>Service Monitoring</h1>
-          <div className="form">
-            <input
-                type="text"
-                placeholder="Service Name"
-                value={serviceName}
-                onChange={(e) => setServiceName(e.target.value)}
-            />
-            <input
-                type="text"
-                placeholder="Comment"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-            />
-            <button onClick={addService}>Add Service</button>
-          </div>
-          <table>
-            <thead>
-            <tr>
-              <th>#</th>
-              <th>GUID</th>
-              <th>Service Name</th>
-              <th>Comment</th>
-              <th>Token</th>
-              <th>Status</th>
-            </tr>
-            </thead>
-            <tbody>
-            {services.map((service, index) => (
-                <tr key={service.guid}>
-                  <td>{index + 1}</td>
-                  <td>{service.guid}</td>
-                  <td>{service.serviceName}</td>
-                  <td>{service.comment}</td>
-                  <td>{service.token}</td>
-                  <td>{service.alive ? 'Alive' : 'Dead'}</td>
+          <div className="container">
+            <div className="left-panel">
+              <h2>Добавить новый сервис</h2>
+              <div className="form">
+                <input
+                    type="text"
+                    placeholder="Название сервиса"
+                    value={serviceName}
+                    onChange={(e) => setServiceName(e.target.value)}
+                />
+                <input
+                    type="text"
+                    placeholder="Название компании"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                />
+                <input
+                    type="text"
+                    placeholder="Комментарий"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                />
+                <input
+                    type="number"
+                    placeholder="Delta T (секунды)"
+                    value={deltaT}
+                    onChange={(e) => setDeltaT(e.target.value)}
+                />
+                <button onClick={addService}>Добавить сервис</button>
+              </div>
+            </div>
+            <div className="right-panel">
+              <h2>Статусы сервисов</h2>
+              <table>
+                <thead>
+                <tr>
+                  <th>#</th>
+                  <th>GUID</th>
+                  <th>Название сервиса</th>
+                  <th>Компания</th>
+                  <th>Комментарий</th>
+                  <th>Token</th>
+                  <th>Delta T (с)</th>
+                  <th>Статус</th>
+                  <th>Последнее обновление (GMT)</th>
                 </tr>
-            ))}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                {services.map((service, index) => (
+                    <tr key={service.guid}>
+                      <td>{index + 1}</td>
+                      <td>{service.guid}</td>
+                      <td>{service.serviceName}</td>
+                      <td>{service.companyName}</td>
+                      <td>{service.comment}</td>
+                      <td>{service.token}</td>
+                      <td>{service.deltaT}</td>
+                      <td>{service.alive ? 'Alive' : 'Dead'}</td>
+                      <td>{new Date(service.lastUpdateTime).toUTCString()}</td>
+                    </tr>
+                ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </header>
       </div>
   );
 }
 
 export default App;
+
 
