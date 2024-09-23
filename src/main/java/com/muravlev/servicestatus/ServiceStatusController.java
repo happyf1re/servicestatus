@@ -19,29 +19,31 @@ public class ServiceStatusController {
     private ServiceStatusService serviceStatusService;
 
     @PostMapping("/heartbeat")
-    public void receiveHeartbeat(@RequestHeader("Authorization") String token, @RequestBody ServiceRequest request) {
+    public ResponseEntity<String> receiveHeartbeat(@RequestHeader("Authorization") String token, @RequestBody ServiceRequest request) {
         logger.info("Received heartbeat from service: {}", request.getServiceName());
 
         if (!isValidToken(token)) {
             logger.warn("Unauthorized access attempt with token: {}", token);
             sendUnauthorizedAccessNotification(token);
-            return;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
         }
+
         serviceStatusService.updateServiceStatus(request.getGuid(), request.getServiceName());
+        return ResponseEntity.ok("Heartbeat received successfully.");
     }
 
     @PostMapping("/register")
     public ResponseEntity<ServiceStatus> registerService(@RequestBody ServiceRequest request) {
-        // Проверка на уже существующий сервис с таким же guid
         if (serviceStatusService.getServiceByGuid(request.getGuid()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         }
 
-        // Генерация токена и регистрация сервиса
         ServiceStatus serviceStatus = serviceStatusService.registerNewService(
                 request.getGuid(),
                 request.getServiceName(),
-                request.getComment()
+                request.getComment(),
+                request.getDeltaT(),
+                request.getCompanyName()
         );
 
         return ResponseEntity.ok(serviceStatus);

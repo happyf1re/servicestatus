@@ -8,8 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+
+import static ch.qos.logback.core.spi.ComponentTracker.DEFAULT_TIMEOUT;
 
 
 @Service
@@ -46,25 +49,32 @@ public class ServiceStatusService {
             service.setLastUpdateTime(LocalDateTime.now());
             repository.save(service);
         } else {
+            service.updateAliveStatus(true);
             service.setLastUpdateTime(LocalDateTime.now());
-            service.setAlive(true);
             repository.save(service);
+
+            // Отправляем уведомление только если сервис перешел из DEAD в ALIVE
+            if (!service.isPreviousIsAlive()) {
+                sendTelegramNotification("Service " + service.getServiceName() + " is now alive!");
+            }
         }
     }
 
     // Регистрация нового сервиса с токеном и комментарием
-    public ServiceStatus registerNewService(String guid, String serviceName, String comment) {
+    public ServiceStatus registerNewService(String guid, String serviceName, String comment, Long deltaT, String companyName) {
         logger.info("Registering new service: {}", serviceName);
 
         ServiceStatus service = new ServiceStatus();
-        service.setGuid(UUID.randomUUID().toString());  // Генерация нового GUID
+        service.setGuid(UUID.randomUUID().toString());
         service.setServiceName(serviceName);
         service.setComment(comment);
-        service.setAlive(true);
+        service.setAlive(false);
+        service.setCompanyName(companyName);
         service.setLastUpdateTime(LocalDateTime.now());
-        service.setToken(UUID.randomUUID().toString());  // Генерация токена
+        service.setToken(UUID.randomUUID().toString());
+        service.setDeltaT(deltaT); // Устанавливаем deltaT
 
-        repository.save(service);  // Сохранение в базу данных
+        repository.save(service);
         return service;
     }
 
@@ -74,13 +84,16 @@ public class ServiceStatusService {
         LocalDateTime now = LocalDateTime.now();
         List<ServiceStatus> services = repository.findAll();
         for (ServiceStatus service : services) {
-            logger.info("Checking service: {}. Last update time: {}", service.getServiceName(), service.getLastUpdateTime());
+            long secondsSinceLastUpdate = ChronoUnit.SECONDS.between(service.getLastUpdateTime(), now);
+            long timeout = service.getDeltaT() != null ? service.getDeltaT() : DEFAULT_TIMEOUT;
 
-            if (service.isAlive() && service.getLastUpdateTime().isBefore(now.minusSeconds(10))) {
-                service.setAlive(false);
+            if (service.isAlive() && secondsSinceLastUpdate > timeout) {
+                service.updateAliveStatus(false);
                 repository.save(service);
-                logger.warn("Service {} is down. Updating status to dead.", service.getServiceName());
-                sendTelegramNotification("Service " + service.getServiceName() + " is down!");
+
+                if (service.isPreviousIsAlive()) {
+                    sendTelegramNotification("Service " + service.getServiceName() + " is down!");
+                }
             }
         }
     }

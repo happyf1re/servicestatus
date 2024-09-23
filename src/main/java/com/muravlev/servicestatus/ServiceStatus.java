@@ -1,9 +1,6 @@
 package com.muravlev.servicestatus;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,10 +20,20 @@ public class ServiceStatus {
     private Long id;
 
     private String guid;
+    private Long deltaT;
+    private String companyName;
     private String serviceName;
     private LocalDateTime lastUpdateTime;
     private boolean isAlive;
     private String token;
     private String comment;
+    // Добавляем поле для хранения предыдущего состояния
+    @Transient
+    private boolean previousIsAlive;
 
+    // Добавляем метод для обновления состояния и хранения предыдущего
+    public void updateAliveStatus(boolean newStatus) {
+        this.previousIsAlive = this.isAlive;
+        this.isAlive = newStatus;
+    }
 }

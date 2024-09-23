@@ -9,4 +9,6 @@ public class ServiceRequest {
     private String guid;
     private String serviceName;
     private String comment;
+    private String companyName;
+    private Long deltaT; // Это добавили
 }
