@@ -19,7 +19,7 @@ function App() {
 
   const fetchServices = async () => {
     try {
-      const response = await axios.get('/api/services');
+      const response = await axios.get('https://healthcheck.a-m0.ru/api/services'); // Указываем полный URL
       console.log(JSON.stringify(response.data, null, 2)); // Логируем
       setServices(response.data);
     } catch (error) {
@@ -29,7 +29,7 @@ function App() {
 
   const addService = async () => {
     try {
-      const response = await axios.post('/api/register', {
+      const response = await axios.post('https://healthcheck.a-m0.ru/api/register', { // Указываем полный URL
         serviceName,
         comment,
         deltaT: parseInt(deltaT, 10),
@@ -122,5 +122,6 @@ function App() {
 }
 
 export default App;
+
 
 
